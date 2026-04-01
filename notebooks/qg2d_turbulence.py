@@ -37,7 +37,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    N_ctrl      = mo.ui.slider(64, 512, step=64, value=256, label="Resolution N")
+    N_ctrl      = mo.ui.slider(64, 512, step=64, value=128, label="Resolution N")
     nu_ctrl     = mo.ui.number(start=1e-10, stop=1e-3, step=1e-9, value=1e-7,
                                label="Hyperviscosity ν")
     order_ctrl  = mo.ui.slider(1, 4, step=1, value=2, label="Order p")
@@ -45,7 +45,7 @@ def _(mo):
                                label="β (planetary vorticity gradient)")
     dt_ctrl     = mo.ui.number(start=1e-4, stop=0.05, step=1e-4, value=0.005,
                                label="Time step dt")
-    nsteps_ctrl = mo.ui.slider(200, 10000, step=200, value=2000,
+    nsteps_ctrl = mo.ui.slider(200, 10000, step=200, value=500,
                                label="Steps to run")
     seed_ctrl   = mo.ui.number(start=0, stop=9999, step=1, value=42,
                                label="Random seed")

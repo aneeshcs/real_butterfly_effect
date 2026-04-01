@@ -1,0 +1,55 @@
+name: Deploy Notebooks to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install marimo
+        run: pip install "marimo>=0.21.0"
+
+      - name: Export notebooks to WASM HTML
+        run: |
+          mkdir -p site/qg2d site/qg3d
+          marimo export html-wasm notebooks/qg2d_turbulence.py \
+            --output site/qg2d/ --mode run
+          marimo export html-wasm notebooks/qg3d_turbulence.py \
+            --output site/qg3d/ --mode run
+          cp docs/index.html site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

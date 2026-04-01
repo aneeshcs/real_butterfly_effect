@@ -43,7 +43,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    N_ctrl      = mo.ui.slider(64, 512, step=64, value=128, label="Resolution N")
+    N_ctrl      = mo.ui.slider(64, 512, step=64, value=64, label="Resolution N")
     F1_ctrl     = mo.ui.number(start=0.0, stop=100.0, step=0.5, value=10.0,
                                label="F₁ = f₀²/(g′H₁)")
     F2_ctrl     = mo.ui.number(start=0.0, stop=100.0, step=0.5, value=10.0,
@@ -57,7 +57,7 @@ def _(mo):
                                label="Bottom drag κ")
     dt_ctrl     = mo.ui.number(start=1e-4, stop=0.05, step=1e-4, value=0.005,
                                label="Time step dt")
-    nsteps_ctrl = mo.ui.slider(200, 10000, step=200, value=2000,
+    nsteps_ctrl = mo.ui.slider(200, 10000, step=200, value=500,
                                label="Steps to run")
     seed_ctrl   = mo.ui.number(start=0, stop=9999, step=1, value=42,
                                label="Random seed")
