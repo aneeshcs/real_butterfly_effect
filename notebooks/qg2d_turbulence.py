@@ -10,8 +10,7 @@ def _():
     import numpy as np
     from numpy.fft import fft2, ifft2, fftfreq
     import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
-    return fft2, fftfreq, gridspec, ifft2, mo, np, plt
+    return fft2, fftfreq, ifft2, mo, np, plt
 
 
 @app.cell
@@ -142,7 +141,7 @@ def _(K2_safe, KX, KY, dealias, fft2, ifft2, np):
 
 
 @app.cell
-def _(K2, N, dealias, fft2, np, seed_ctrl):
+def _(K2, N, dealias, fft2, ifft2, np, seed_ctrl):
     # ── Initial condition: band-limited random vorticity ─────────────────────
     rng = np.random.default_rng(seed_ctrl.value)
 
@@ -158,8 +157,8 @@ def _(K2, N, dealias, fft2, np, seed_ctrl):
     q0_hat[0, 0] = 0.0
 
     # Normalise to unit enstrophy
-    q0     = np.real(ifft2 := __import__('numpy.fft', fromlist=['ifft2']).ifft2)(q0_hat)
-    norm   = np.sqrt(np.mean(q0**2))
+    q0   = np.real(ifft2(q0_hat))
+    norm = np.sqrt(np.mean(q0**2))
     q0_hat = q0_hat / (norm + 1e-30)
 
     return band, k0, k_mag, norm, phases, q0_hat, rng
@@ -242,7 +241,7 @@ def _(K2, KX, KY, invert_pv, np, plt, q_hat):
     E_spec    = np.bincount(k_mag_, weights=E_k_flat, minlength=kmax_int + 1)
     k_bins    = np.arange(kmax_int + 1)
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5))
 
     im0 = axes[0].imshow(q_phys, cmap='RdBu_r', origin='lower')
     axes[0].set_title('Potential Vorticity $q$')
@@ -411,7 +410,7 @@ def _(
 
 @app.cell
 def _(err_energy, ftle, plt, pred_times):
-    fig_pred, axes_pred = plt.subplots(1, 2, figsize=(11, 4))
+    fig_pred, axes_pred = plt.subplots(1, 2, figsize=(10, 4))
 
     axes_pred[0].semilogy(pred_times, err_energy, 'b-', linewidth=1.5)
     axes_pred[0].set_xlabel('Time')
