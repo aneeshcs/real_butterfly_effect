@@ -40,9 +40,9 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1.5rem;
-      max-width: 820px;
+      max-width: 1100px;
       width: 100%;
     }
 
@@ -186,6 +186,27 @@
         <li>Layer-wise FTLE</li>
       </ul>
       <a class="btn" href="qg3d/index.html">Launch Notebook</a>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">SQG</span>
+      <h2>Surface Quasi-Geostrophic Turbulence</h2>
+      <p>
+        Pseudospectral solver for the SQG equations, where surface buoyancy
+        drives the flow via a shallower Green's function:
+        <br><br>
+        <span class="eq">∂b/∂t + J(ψ,b) = ν(−1)^(p+1) ∇^(2p) b</span>
+        <br><br>
+        with <span class="eq">ψ̂ = b̂ / |k|</span> (vs. <span class="eq">b̂ / k²</span> in 2D QG).
+      </p>
+      <ul>
+        <li>Filamentary surface buoyancy structures</li>
+        <li>KE spectrum E(k) ~ k⁻⁵/³ (Lorenz 1969 regime)</li>
+        <li>Surface energy = buoyancy variance (SQG identity)</li>
+        <li>Twin-run predictability experiment</li>
+        <li>Finite-time Lyapunov exponent (FTLE)</li>
+      </ul>
+      <a class="btn" href="sqg/index.html">Launch Notebook</a>
     </div>
 
   </div>

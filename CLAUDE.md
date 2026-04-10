@@ -54,7 +54,8 @@ real_butterfly_effect/
 ├── requirements.txt                 # pip-installable dependencies
 ├── notebooks/
 │   ├── qg2d_turbulence.py           # 2D QG pseudospectral marimo notebook
-│   └── qg3d_turbulence.py           # 2-layer QG pseudospectral marimo notebook
+│   ├── qg3d_turbulence.py           # 2-layer QG pseudospectral marimo notebook
+│   └── sqg_turbulence.py            # SQG pseudospectral marimo notebook
 ├── docs/
 │   └── index.html                   # GitHub Pages landing page (static HTML)
 └── .github/
@@ -88,6 +89,16 @@ real_butterfly_effect/
 - **Time stepping:** 4th-order Runge-Kutta (RK4)
 - **Initial conditions:** band-limited random vorticity centred on wavenumber k₀=4,
   normalised to unit enstrophy, Hermitian-symmetrised for real fields
+
+### SQG Model (`sqg_turbulence.py`)
+- **Domain:** doubly-periodic `[0, 2π)²`
+- **Buoyancy equation:** `∂b/∂t + J(ψ,b) = ν(−1)^(p+1) ∇^(2p) b`
+- **SQG inversion:** `ψ̂ = b̂/|k|`  (Green's function is `|k|⁻¹`, shallower than 2D QG `|k|⁻²`)
+- **Key SQG identity:** surface KE = buoyancy variance: `½Σk²|ψ̂|² = ½Σ|b̂|²`
+  This means only one energy-like quantity needs to be tracked
+- **Expected spectrum:** `E(k) ~ k⁻⁵/³` (Lorenz 1969 predictability regime)
+- **Predictability:** faster error growth than 2D QG due to more energetic small scales;
+  directly relevant to Lorenz (1969) theory of finite predictability limits in `k⁻⁵/³` flows
 
 ### Predictability Diagnostics
 - **Error energy:** `E_err(t) = ½N⁻² Σ_k K² |δψ̂_k|²`
@@ -156,7 +167,7 @@ These rules are critical — violating them causes silent failures or broken WAS
 
 ### GitHub Actions (`deploy.yml`)
 - Triggered on every push to `main`
-- Installs marimo, exports both notebooks with `marimo export html-wasm --mode run`
+- Installs marimo, exports all three notebooks with `marimo export html-wasm --mode run`
 - Copies `docs/index.html` as the landing page
 - Deploys the `site/` directory to GitHub Pages via `actions/deploy-pages`
 
