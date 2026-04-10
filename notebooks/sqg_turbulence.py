@@ -367,5 +367,136 @@ def _(err_energy, ftle, mo, np, pred_times):
     return lambda_inf, t_pred
 
 
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        ## Wavenumber-Targeted Perturbation
+
+        A perturbation is injected at a single wavenumber shell $|\mathbf{k}| = k_{\rm inj}$
+        with a chosen signed amplitude. Positive amplitude adds positive surface buoyancy
+        at that scale; negative adds negative. In SQG, the shallower $k^{-5/3}$ spectrum
+        means small-scale modes are more energetic than in 2D QG, so errors injected at
+        high $k$ can propagate upscale rapidly.
+
+        We track the **spectral error energy** (= error buoyancy variance = error KE):
+        $$E_{\rm err}(k, t) = \frac{1}{2N^2} \sum_{|\mathbf{k}'| = k}
+          |\delta\hat{b}_{\mathbf{k}'}(t)|^2$$
+
+        Curves evolve from early (blue/purple) to late (yellow), revealing the
+        characteristic upscale and downscale error cascade of SQG turbulence.
+        """
+    )
+    return
+
+
+@app.cell
+def _(kmax, mo):
+    k_injs_ctrl = mo.ui.slider(1, kmax - 1, step=1, value=8,
+                               label="Injection wavenumber $k_{\\rm inj}$")
+    wamps_ctrl  = mo.ui.number(start=-0.1, stop=0.1, step=0.001, value=1e-3,
+                               label="Perturbation amplitude (signed)")
+    wseeds_ctrl = mo.ui.number(start=0, stop=9999, step=1, value=99,
+                               label="Perturbation seed")
+    mo.hstack([k_injs_ctrl, wamps_ctrl, wseeds_ctrl])
+    return k_injs_ctrl, wamps_ctrl, wseeds_ctrl
+
+
+@app.cell
+def _(
+    K_mag,
+    b0_hat,
+    dealias,
+    dt,
+    k_injs_ctrl,
+    np,
+    nsteps,
+    nu,
+    order,
+    rk4_step,
+    wamps_ctrl,
+    wseeds_ctrl,
+):
+    # ── Wavenumber-targeted perturbation integration (SQG) ────────────────────
+    k_injs  = k_injs_ctrl.value
+    wamps   = wamps_ctrl.value
+
+    # Build ring perturbation at wavenumber shell k_injs
+    rings   = (np.abs(K_mag - k_injs) < 0.5).astype(float) * dealias
+    wrngs   = np.random.default_rng(wseeds_ctrl.value)
+    wphs    = wrngs.uniform(0, 2 * np.pi, b0_hat.shape)
+    dbs_hat = rings * np.exp(1j * wphs)
+    dbs_hat += np.conj(dbs_hat[::-1, ::-1])
+    dbs_hat[0, 0] = 0.0
+    wnorms  = np.sqrt(np.sum(np.abs(dbs_hat)**2)) + 1e-30
+    dbs_hat = (wamps / wnorms) * dbs_hat
+
+    brefs_hat  = b0_hat.copy()
+    bperts_hat = b0_hat + dbs_hat
+
+    n_snaps_s  = 8
+    snap_idxs  = set(np.linspace(0, nsteps - 1, n_snaps_s, dtype=int))
+    k_int_s    = K_mag.ravel().astype(int)
+    kmax_s     = k_int_s.max()
+
+    wsnap_timess, wsnap_specss = [], []
+
+    for _s in range(nsteps):
+        brefs_hat  = rk4_step(brefs_hat,  dt, nu, order)
+        bperts_hat = rk4_step(bperts_hat, dt, nu, order)
+        if _s in snap_idxs:
+            _delta  = bperts_hat - brefs_hat
+            # Error energy = buoyancy variance (SQG identity)
+            _Ek     = 0.5 * (np.abs(_delta)**2 / _delta.size**2).ravel()
+            _spec   = np.bincount(k_int_s, weights=_Ek, minlength=kmax_s + 1)
+            wsnap_timess.append((_s + 1) * dt)
+            wsnap_specss.append(_spec)
+
+    wsnap_timess = np.array(wsnap_timess)
+    wsnap_specss = np.array(wsnap_specss)
+    k_bins_s     = np.arange(kmax_s + 1)
+
+    return (
+        bperts_hat, brefs_hat, dbs_hat, k_bins_s, k_injs, kmax_s,
+        rings, wamps, wsnap_specss, wsnap_timess,
+    )
+
+
+@app.cell
+def _(k_bins_s, k_injs, kmax_s, np, plt, wamps, wsnap_specss, wsnap_timess):
+    import matplotlib.cm as _cms
+
+    fig_wns, ax_wns = plt.subplots(figsize=(9, 4.5))
+    _cmaps   = _cms.plasma
+    _colorss = _cmaps(np.linspace(0.1, 0.9, len(wsnap_timess)))
+    k_plot_s = k_bins_s[1:kmax_s // 2]
+
+    for _i, (_spec, _tt) in enumerate(zip(wsnap_specss, wsnap_timess)):
+        ax_wns.semilogy(
+            k_plot_s, np.maximum(_spec[1:kmax_s // 2], 1e-30),
+            color=_colorss[_i], linewidth=1.5, label=f't = {_tt:.2f}'
+        )
+
+    ax_wns.axvline(k_injs, color='k', linestyle='--', linewidth=1.2,
+                   label=f'$k_{{\\rm inj}} = {k_injs}$')
+    ax_wns.set_xlabel('Wavenumber $k$')
+    ax_wns.set_ylabel('Error Buoyancy Variance  $E_{\\rm err}(k, t)$')
+    ax_wns.set_title(
+        f'Spectral Error Growth  '
+        f'(injection: $k = {k_injs}$,  amplitude = {wamps:.2e})'
+    )
+    ax_wns.legend(fontsize=7, ncol=2, loc='lower left')
+    ax_wns.grid(True, which='both', alpha=0.3)
+
+    _sms = plt.cm.ScalarMappable(
+        cmap=_cmaps,
+        norm=plt.Normalize(wsnap_timess.min(), wsnap_timess.max())
+    )
+    plt.colorbar(_sms, ax=ax_wns, label='Time')
+    plt.tight_layout()
+    fig_wns
+    return ax_wns, fig_wns, k_plot_s
+
+
 if __name__ == "__main__":
     app.run()

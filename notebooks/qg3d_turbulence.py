@@ -561,5 +561,157 @@ def _(err1_series, err2_series, ftle2, mo, np, pred_times2):
     return err_tot, lambda_inf2
 
 
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        ## Wavenumber-Targeted Perturbation
+
+        A perturbation is injected at a single wavenumber shell $|\mathbf{k}| = k_{\rm inj}$
+        in a chosen layer (or both). Positive amplitude adds cyclonic PV; negative adds
+        anticyclonic. The **spectral error KE** per layer is tracked over time:
+
+        $$E_{{\rm err},n}(k, t) = \frac{1}{2N^2} \sum_{|\mathbf{k}'| = k}
+          K'^2 \, |\delta\hat{\psi}_{n,\mathbf{k}'}(t)|^2$$
+
+        Separate panels show how errors spread across scales in each layer,
+        revealing whether baroclinic or barotropic modes carry the error at each scale.
+        """
+    )
+    return
+
+
+@app.cell
+def _(kmax, mo):
+    k_inj3_ctrl  = mo.ui.slider(1, kmax - 1, step=1, value=8,
+                                label="Injection wavenumber $k_{\\rm inj}$")
+    wamp3_ctrl   = mo.ui.number(start=-0.1, stop=0.1, step=0.001, value=1e-3,
+                                label="Perturbation amplitude (signed)")
+    wseed3_ctrl  = mo.ui.number(start=0, stop=9999, step=1, value=99,
+                                label="Perturbation seed")
+    layer3_ctrl  = mo.ui.dropdown(
+        options={"Both layers": "both", "Layer 1 only": "layer1", "Layer 2 only": "layer2"},
+        value="both",
+        label="Perturb"
+    )
+    mo.hstack([k_inj3_ctrl, wamp3_ctrl, wseed3_ctrl, layer3_ctrl])
+    return k_inj3_ctrl, layer3_ctrl, wamp3_ctrl, wseed3_ctrl
+
+
+@app.cell
+def _(
+    K2,
+    dealias,
+    dt,
+    invert_pv_2layer,
+    k_inj3_ctrl,
+    layer3_ctrl,
+    np,
+    nsteps,
+    q1_0_hat,
+    q2_0_hat,
+    rk4_step_2layer,
+    wamp3_ctrl,
+    wseed3_ctrl,
+):
+    # ── Wavenumber-targeted perturbation integration (2-layer) ────────────────
+    k_inj3  = k_inj3_ctrl.value
+    wamp3   = wamp3_ctrl.value
+    layer3  = layer3_ctrl.value
+    K_mag_3 = np.sqrt(K2)
+
+    # Build ring perturbation
+    ring3   = (np.abs(K_mag_3 - k_inj3) < 0.5).astype(float) * dealias
+    wrng3   = np.random.default_rng(wseed3_ctrl.value)
+
+    def _make_perturb(rng):
+        ph  = rng.uniform(0, 2 * np.pi, q1_0_hat.shape)
+        dh  = ring3 * np.exp(1j * ph)
+        dh += np.conj(dh[::-1, ::-1])
+        dh[0, 0] = 0.0
+        return (wamp3 / (np.sqrt(np.sum(np.abs(dh)**2)) + 1e-30)) * dh
+
+    dq1w_hat = _make_perturb(wrng3) if layer3 in ("both", "layer1") else np.zeros_like(q1_0_hat)
+    dq2w_hat = _make_perturb(wrng3) if layer3 in ("both", "layer2") else np.zeros_like(q2_0_hat)
+
+    q1r_w = q1_0_hat.copy();  q2r_w = q2_0_hat.copy()
+    q1p_w = q1_0_hat + dq1w_hat;  q2p_w = q2_0_hat + dq2w_hat
+
+    n_snaps3  = 8
+    snap_idx3 = set(np.linspace(0, nsteps - 1, n_snaps3, dtype=int))
+    k_int_3   = K_mag_3.ravel().astype(int)
+    kmax_3    = k_int_3.max()
+
+    wsnap_times3, wsnap_spec1, wsnap_spec2 = [], [], []
+
+    for _s in range(nsteps):
+        q1r_w, q2r_w = rk4_step_2layer(q1r_w, q2r_w, dt)
+        q1p_w, q2p_w = rk4_step_2layer(q1p_w, q2p_w, dt)
+        if _s in snap_idx3:
+            _d1, _d2   = q1p_w - q1r_w, q2p_w - q2r_w
+            _dp1, _dp2 = invert_pv_2layer(_d1, _d2)
+            _E1 = 0.5 * (K2 * np.abs(_dp1)**2 / _d1.size**2).ravel()
+            _E2 = 0.5 * (K2 * np.abs(_dp2)**2 / _d2.size**2).ravel()
+            wsnap_times3.append((_s + 1) * dt)
+            wsnap_spec1.append(np.bincount(k_int_3, weights=_E1, minlength=kmax_3 + 1))
+            wsnap_spec2.append(np.bincount(k_int_3, weights=_E2, minlength=kmax_3 + 1))
+
+    wsnap_times3 = np.array(wsnap_times3)
+    wsnap_spec1  = np.array(wsnap_spec1)
+    wsnap_spec2  = np.array(wsnap_spec2)
+    k_bins_3     = np.arange(kmax_3 + 1)
+
+    return (
+        K_mag_3, dq1w_hat, dq2w_hat, k_bins_3, k_inj3, kmax_3,
+        layer3, ring3, wamp3, wsnap_spec1, wsnap_spec2, wsnap_times3,
+    )
+
+
+@app.cell
+def _(
+    k_bins_3, k_inj3, kmax_3, layer3, np, plt,
+    wamp3, wsnap_spec1, wsnap_spec2, wsnap_times3,
+):
+    import matplotlib.cm as _cm3
+
+    fig_wn3, axes_wn3 = plt.subplots(1, 2, figsize=(11, 4.5))
+    _cmap3   = _cm3.plasma
+    _colors3 = _cmap3(np.linspace(0.1, 0.9, len(wsnap_times3)))
+    k_plot_3 = k_bins_3[1:kmax_3 // 2]
+
+    for _i, _tt in enumerate(wsnap_times3):
+        _lbl = f't = {_tt:.2f}'
+        axes_wn3[0].semilogy(
+            k_plot_3, np.maximum(wsnap_spec1[_i, 1:kmax_3 // 2], 1e-30),
+            color=_colors3[_i], linewidth=1.5, label=_lbl
+        )
+        axes_wn3[1].semilogy(
+            k_plot_3, np.maximum(wsnap_spec2[_i, 1:kmax_3 // 2], 1e-30),
+            color=_colors3[_i], linewidth=1.5, label=_lbl
+        )
+
+    for _ax, _lyr in zip(axes_wn3, ['Layer 1', 'Layer 2']):
+        _ax.axvline(k_inj3, color='k', linestyle='--', linewidth=1.2,
+                    label=f'$k_{{\\rm inj}} = {k_inj3}$')
+        _ax.set_xlabel('Wavenumber $k$')
+        _ax.set_ylabel('Error KE  $E_{\\rm err}(k, t)$')
+        _ax.set_title(f'{_lyr} Spectral Error Growth')
+        _ax.legend(fontsize=6, ncol=2, loc='lower left')
+        _ax.grid(True, which='both', alpha=0.3)
+
+    fig_wn3.suptitle(
+        f'Injection: $k = {k_inj3}$,  amplitude = {wamp3:.2e},  perturbed: {layer3}',
+        fontsize=10
+    )
+    _sm3 = plt.cm.ScalarMappable(
+        cmap=_cmap3,
+        norm=plt.Normalize(wsnap_times3.min(), wsnap_times3.max())
+    )
+    plt.colorbar(_sm3, ax=axes_wn3, label='Time')
+    plt.tight_layout()
+    fig_wn3
+    return axes_wn3, fig_wn3, k_plot_3
+
+
 if __name__ == "__main__":
     app.run()

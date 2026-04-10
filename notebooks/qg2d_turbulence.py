@@ -450,5 +450,137 @@ def _(K2, err_energy, ftle, mo, np, pred_times):
     return lambda_inf, t_pred
 
 
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        ## Wavenumber-Targeted Perturbation
+
+        A perturbation is injected at a single wavenumber shell $|\mathbf{k}| = k_{\rm inj}$
+        with a chosen signed amplitude. Positive amplitude adds cyclonic vorticity at that scale;
+        negative adds anticyclonic. For finite amplitudes these can evolve differently due to
+        nonlinearity, even though the linearised dynamics are amplitude-sign symmetric.
+
+        We track the **spectral error KE** at multiple times:
+        $$E_{\rm err}(k, t) = \frac{1}{2N^2} \sum_{|\mathbf{k}'| = k}
+          K'^2 \, |\delta\hat{\psi}_{\mathbf{k}'}(t)|^2$$
+
+        Curves are coloured from early (blue/purple) to late (yellow), showing how
+        error energy spreads upscale and downscale from the injection wavenumber.
+        """
+    )
+    return
+
+
+@app.cell
+def _(kmax, mo):
+    k_inj_ctrl = mo.ui.slider(1, kmax - 1, step=1, value=8,
+                              label="Injection wavenumber $k_{\\rm inj}$")
+    wamp_ctrl  = mo.ui.number(start=-0.1, stop=0.1, step=0.001, value=1e-3,
+                              label="Perturbation amplitude (signed)")
+    wseed_ctrl = mo.ui.number(start=0, stop=9999, step=1, value=99,
+                              label="Perturbation seed")
+    mo.hstack([k_inj_ctrl, wamp_ctrl, wseed_ctrl])
+    return k_inj_ctrl, wamp_ctrl, wseed_ctrl
+
+
+@app.cell
+def _(
+    K2,
+    KX,
+    beta,
+    dealias,
+    dt,
+    invert_pv,
+    k_inj_ctrl,
+    np,
+    nsteps,
+    nu,
+    order,
+    q0_hat,
+    rk4_step,
+    wamp_ctrl,
+    wseed_ctrl,
+):
+    # ── Wavenumber-targeted perturbation integration ──────────────────────────
+    k_inj  = k_inj_ctrl.value
+    wamp   = wamp_ctrl.value
+    K_mag_w = np.sqrt(K2)
+
+    # Build ring-localised perturbation at wavenumber shell k_inj
+    ring    = (np.abs(K_mag_w - k_inj) < 0.5).astype(float) * dealias
+    wrng    = np.random.default_rng(wseed_ctrl.value)
+    wph     = wrng.uniform(0, 2 * np.pi, q0_hat.shape)
+    dqw_hat = ring * np.exp(1j * wph)
+    dqw_hat += np.conj(dqw_hat[::-1, ::-1])
+    dqw_hat[0, 0] = 0.0
+    wnorm   = np.sqrt(np.sum(np.abs(dqw_hat)**2)) + 1e-30
+    dqw_hat = (wamp / wnorm) * dqw_hat
+
+    qref_w  = q0_hat.copy()
+    qpert_w = q0_hat + dqw_hat
+
+    # Save spectral error at n_snaps evenly spaced times
+    n_snaps  = 8
+    snap_idx = set(np.linspace(0, nsteps - 1, n_snaps, dtype=int))
+    k_int_w  = K_mag_w.ravel().astype(int)
+    kmax_w   = k_int_w.max()
+
+    wsnap_times, wsnap_spectra = [], []
+
+    for _s in range(nsteps):
+        qref_w  = rk4_step(qref_w,  dt, nu, order, beta, KX, K2)
+        qpert_w = rk4_step(qpert_w, dt, nu, order, beta, KX, K2)
+        if _s in snap_idx:
+            _delta  = qpert_w - qref_w
+            _dpsi   = invert_pv(_delta)
+            _Ek     = 0.5 * (K2 * np.abs(_dpsi)**2 / _delta.size**2).ravel()
+            _spec   = np.bincount(k_int_w, weights=_Ek, minlength=kmax_w + 1)
+            wsnap_times.append((_s + 1) * dt)
+            wsnap_spectra.append(_spec)
+
+    wsnap_times   = np.array(wsnap_times)
+    wsnap_spectra = np.array(wsnap_spectra)   # shape: (n_snaps, kmax_w+1)
+    k_bins_w      = np.arange(kmax_w + 1)
+
+    return K_mag_w, dqw_hat, k_bins_w, k_inj, kmax_w, ring, wamp, wsnap_spectra, wsnap_times
+
+
+@app.cell
+def _(k_bins_w, k_inj, kmax_w, np, plt, wamp, wsnap_spectra, wsnap_times):
+    import matplotlib.cm as _cm
+
+    fig_wn, ax_wn = plt.subplots(figsize=(9, 4.5))
+    _cmap   = _cm.plasma
+    _colors = _cmap(np.linspace(0.1, 0.9, len(wsnap_times)))
+    k_plot_w = k_bins_w[1:kmax_w // 2]
+
+    for _i, (_spec, _tt) in enumerate(zip(wsnap_spectra, wsnap_times)):
+        ax_wn.semilogy(
+            k_plot_w, np.maximum(_spec[1:kmax_w // 2], 1e-30),
+            color=_colors[_i], linewidth=1.5, label=f't = {_tt:.2f}'
+        )
+
+    ax_wn.axvline(k_inj, color='k', linestyle='--', linewidth=1.2,
+                  label=f'$k_{{\\rm inj}} = {k_inj}$')
+    ax_wn.set_xlabel('Wavenumber $k$')
+    ax_wn.set_ylabel('Error KE Spectrum  $E_{\\rm err}(k, t)$')
+    ax_wn.set_title(
+        f'Spectral Error Growth  '
+        f'(injection: $k = {k_inj}$,  amplitude = {wamp:.2e})'
+    )
+    ax_wn.legend(fontsize=7, ncol=2, loc='lower left')
+    ax_wn.grid(True, which='both', alpha=0.3)
+
+    _sm = plt.cm.ScalarMappable(
+        cmap=_cmap,
+        norm=plt.Normalize(wsnap_times.min(), wsnap_times.max())
+    )
+    plt.colorbar(_sm, ax=ax_wn, label='Time')
+    plt.tight_layout()
+    fig_wn
+    return ax_wn, fig_wn, k_plot_w
+
+
 if __name__ == "__main__":
     app.run()
