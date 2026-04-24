@@ -31,13 +31,15 @@ jobs:
 
       - name: Export notebooks to WASM HTML
         run: |
-          mkdir -p site/qg2d site/qg3d site/sqg
+          mkdir -p site/qg2d site/qg3d site/sqg site/ns2d
           marimo export html-wasm notebooks/qg2d_turbulence.py \
             --output site/qg2d/ --mode run --no-show-code
           marimo export html-wasm notebooks/qg3d_turbulence.py \
             --output site/qg3d/ --mode run --no-show-code
           marimo export html-wasm notebooks/sqg_turbulence.py \
             --output site/sqg/ --mode run --no-show-code
+          marimo export html-wasm notebooks/ns2d_turbulence.py \
+            --output site/ns2d/ --mode run --no-show-code
           cp docs/index.html site/index.html
 
       - name: Upload Pages artifact

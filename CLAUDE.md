@@ -55,7 +55,8 @@ real_butterfly_effect/
 ├── notebooks/
 │   ├── qg2d_turbulence.py           # 2D QG pseudospectral marimo notebook
 │   ├── qg3d_turbulence.py           # 2-layer QG pseudospectral marimo notebook
-│   └── sqg_turbulence.py            # SQG pseudospectral marimo notebook
+│   ├── sqg_turbulence.py            # SQG pseudospectral marimo notebook
+│   └── ns2d_turbulence.py           # 2D Navier-Stokes marimo notebook
 ├── docs/
 │   └── index.html                   # GitHub Pages landing page (static HTML)
 └── .github/
@@ -89,6 +90,19 @@ real_butterfly_effect/
 - **Time stepping:** 4th-order Runge-Kutta (RK4)
 - **Initial conditions:** band-limited random vorticity centred on wavenumber k₀=4,
   normalised to unit enstrophy, Hermitian-symmetrised for real fields
+
+### 2D Navier-Stokes Model (`ns2d_turbulence.py`)
+- **Domain:** doubly-periodic `[0, 2π)²`
+- **Vorticity equation:** `∂ω/∂t + J(ψ,ω) = ν(−1)^(p+1)∇^(2p)ω − μω + F`
+- **Inversion:** `ψ̂ = −ω̂/K²` (identical to 2D QG with β=0 — the distinction is physical, not mathematical)
+- **Linear drag:** `−μω` acts as a large-scale energy sink to prevent pile-up at low k
+- **Forcing:** `F` is a fixed stochastic pattern generated once at initialization from `seed`,
+  concentrated at forcing wavenumber `k_f`. Setting `F₀=0` gives freely decaying turbulence.
+- **Key physics:** dual cascade — enstrophy forward (k⁻³), energy inversely (k⁻⁵/³)
+- **Key difference from 2D QG:** no β-plane, no stratification, no geostrophic constraint;
+  includes maintained forcing so the turbulence does not simply decay
+- **Predictability:** both reference and perturbed runs use the same `F_hat` — this isolates
+  sensitivity to initial conditions from sensitivity to forcing
 
 ### SQG Model (`sqg_turbulence.py`)
 - **Domain:** doubly-periodic `[0, 2π)²`
