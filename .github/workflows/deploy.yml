@@ -31,7 +31,11 @@ jobs:
 
       - name: Export notebooks to WASM HTML
         run: |
-          mkdir -p site/qg2d site/qg3d site/sqg site/ns2d
+          mkdir -p site/l63 site/l96 site/qg2d site/qg3d site/sqg site/ns2d
+          marimo export html-wasm notebooks/lorenz63.py \
+            --output site/l63/ --mode run --no-show-code
+          marimo export html-wasm notebooks/lorenz96.py \
+            --output site/l96/ --mode run --no-show-code
           marimo export html-wasm notebooks/qg2d_turbulence.py \
             --output site/qg2d/ --mode run --no-show-code
           marimo export html-wasm notebooks/qg3d_turbulence.py \

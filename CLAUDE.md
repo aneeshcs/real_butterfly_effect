@@ -53,6 +53,8 @@ real_butterfly_effect/
 ├── README.md                        # project overview and usage
 ├── requirements.txt                 # pip-installable dependencies
 ├── notebooks/
+│   ├── lorenz63.py                  # Lorenz (1963) 3-variable ODE marimo notebook
+│   ├── lorenz96.py                  # Lorenz (1996) K-variable ring marimo notebook
 │   ├── qg2d_turbulence.py           # 2D QG pseudospectral marimo notebook
 │   ├── qg3d_turbulence.py           # 2-layer QG pseudospectral marimo notebook
 │   ├── sqg_turbulence.py            # SQG pseudospectral marimo notebook
@@ -67,6 +69,25 @@ real_butterfly_effect/
 ---
 
 ## Physics and Numerics
+
+### Lorenz (1963) System (`lorenz63.py`)
+- **Variables:** 3 (x, y, z) — truncated Rayleigh–Bénard convection
+- **Equations:** `dx/dt = σ(y−x)`, `dy/dt = x(ρ−z)−y`, `dz/dt = xy−βz`
+- **Classical parameters:** σ=10, ρ=28, β=8/3; leading Lyapunov exponent λ₁ ≈ 0.906
+- **Diagnostics:** butterfly attractor phase portraits (x–z, x–y), x(t) time series
+- **Perturbation:** random unit-vector ε; FTLE with reference at 0.906
+- **Variable-targeted section:** inject along x, y, or z axis; track δx², δy², δz² separately
+- **No FFT** — purely ODE, full trajectory stored (nsteps+1, 3); cheap for long runs
+
+### Lorenz (1996) Model (`lorenz96.py`)
+- **Variables:** K on a ring (default K=36)
+- **Equation:** `dx_i/dt = (x_{i+1}−x_{i-2})x_{i-1} − x_i + F` (periodic, i=1…K)
+- **Standard chaotic forcing:** F=8, λ₁ ≈ 1.68 (~2-day predictability in atmospheric scaling)
+- **RHS implementation:** `l96_rhs(x, F)` uses `np.roll` for cyclic indexing
+- **Hovmöller diagram:** space–time array (n_saves, K); saved every `nsteps//200` steps
+- **Fourier spectrum:** `np.fft.rfft(x_final) / sqrt(K)` of final state
+- **Predictability:** twin-run FTLE with reference at 1.68; saves every `save_every` steps
+- **Wavenumber perturbation:** cosine injection `δx_i = A·cos(2π·k_inj·i/K)`; spectral error via rfft; 8 plasma-colormap snapshots
 
 ### 2D QG Model (`qg2d_turbulence.py`)
 - **Domain:** doubly-periodic `[0, 2π)²`
@@ -181,7 +202,8 @@ These rules are critical — violating them causes silent failures or broken WAS
 
 ### GitHub Actions (`deploy.yml`)
 - Triggered on every push to `main`
-- Installs marimo, exports all three notebooks with `marimo export html-wasm --mode run`
+- Installs marimo, exports all six notebooks with `marimo export html-wasm --mode run --no-show-code`
+- Order: l63 → l96 → qg2d → qg3d → sqg → ns2d (matches landing page card order)
 - Copies `docs/index.html` as the landing page
 - Deploys the `site/` directory to GitHub Pages via `actions/deploy-pages`
 

@@ -147,6 +147,47 @@
   <div class="cards">
 
     <div class="card">
+      <span class="card-tag">Lorenz 1963</span>
+      <h2>Lorenz (1963) System</h2>
+      <p>
+        The canonical three-variable chaotic system derived from truncated
+        Rayleigh–Bénard convection — the mathematical origin of the butterfly effect:
+        <br><br>
+        <span class="eq">dx/dt = σ(y−x),  dy/dt = x(ρ−z)−y,  dz/dt = xy−βz</span>
+        <br><br>
+        with leading Lyapunov exponent λ₁ ≈ 0.906.
+      </p>
+      <ul>
+        <li>Butterfly attractor phase portraits</li>
+        <li>Twin-run error growth &amp; FTLE</li>
+        <li>Variable-targeted perturbation (x, y, or z)</li>
+        <li>Adjustable σ, ρ, β parameters</li>
+      </ul>
+      <a class="btn" href="l63/index.html">Launch Notebook</a>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">Lorenz 1996</span>
+      <h2>Lorenz (1996) Model</h2>
+      <p>
+        A cyclic K-variable system mimicking a single atmospheric quantity
+        around a latitude circle — a bridge between low-order chaos and
+        turbulence:
+        <br><br>
+        <span class="eq">dx_i/dt = (x_{i+1}−x_{i-2})x_{i-1} − x_i + F</span>
+        <br><br>
+        Standard chaotic regime at F = 8, λ₁ ≈ 1.68.
+      </p>
+      <ul>
+        <li>Hovmöller space–time diagram</li>
+        <li>Fourier energy spectrum of model state</li>
+        <li>Twin-run error growth &amp; FTLE</li>
+        <li>Wavenumber-targeted spectral error growth</li>
+      </ul>
+      <a class="btn" href="l96/index.html">Launch Notebook</a>
+    </div>
+
+    <div class="card">
       <span class="card-tag">2D QG</span>
       <h2>2D Quasi-Geostrophic Turbulence</h2>
       <p>
