@@ -297,7 +297,7 @@ def _(mo):
         value="x",
         label="Perturb variable"
     )
-    vamp_ctrl = mo.ui.number(start=-2.0, stop=2.0, step=0.01, value=1e-4,
+    vamp_ctrl = mo.ui.number(start=-2.0, stop=2.0, step=0.01, value=0.01,
                              label="Perturbation amplitude (signed)")
     mo.hstack([vinj_ctrl, vamp_ctrl])
     return vamp_ctrl, vinj_ctrl
