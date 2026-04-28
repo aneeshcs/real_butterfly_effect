@@ -294,7 +294,7 @@ def _(mo):
 def _(mo):
     vinj_ctrl = mo.ui.dropdown(
         options={"x": 0, "y": 1, "z": 2},
-        value=0,
+        value="x",
         label="Perturb variable"
     )
     vamp_ctrl = mo.ui.number(start=-2.0, stop=2.0, step=0.01, value=1e-4,
@@ -333,7 +333,7 @@ def _(beta, dt, np, nsteps, rk4_step, rho, save_every, sigma, vamp_ctrl, vinj_ct
 
 
 @app.cell
-def _(plt, vamp, verr, vinj, vtimes):
+def _(np, plt, vamp, verr, vinj, vtimes):
     _var_names = ['x', 'y', 'z']
     _colors    = ['#1f77b4', '#ff7f0e', '#2ca02c']
 
