@@ -50,7 +50,7 @@ def _(mo):
                                label="F₂ = f₀²/(g′H₂)")
     beta_ctrl   = mo.ui.number(start=0.0, stop=20.0, step=0.5, value=0.0,
                                label="β")
-    nu_ctrl     = mo.ui.number(start=1e-10, stop=1e-3, step=1e-9, value=1e-6,
+    nu_ctrl     = mo.ui.number(start=1e-9, stop=1e-3, step=1e-9, value=1e-6,
                                label="Hyperviscosity ν")
     order_ctrl  = mo.ui.slider(1, 4, step=1, value=2, label="Order p")
     kappa_ctrl  = mo.ui.number(start=0.0, stop=1.0, step=0.01, value=0.1,
@@ -200,7 +200,7 @@ def _(
 
 
 @app.cell
-def _(K2, N, dealias, fft2, np, seed_ctrl):
+def _(K2, N, dealias, fft2, ifft2, np, seed_ctrl):
     # ── Initial conditions ───────────────────────────────────────────────────
     rng  = np.random.default_rng(seed_ctrl.value)
     k0   = 4
@@ -212,7 +212,7 @@ def _(K2, N, dealias, fft2, np, seed_ctrl):
         qh     = band * np.exp(1j * phases) * dealias
         qh    += np.conj(qh[::-1, ::-1])
         qh[0, 0] = 0.0
-        q_phys = np.real(fft2.__module__ and __import__('numpy.fft', fromlist=['ifft2']).ifft2(qh))
+        q_phys = np.real(ifft2(qh))
         norm   = np.sqrt(np.mean(q_phys**2)) + 1e-30
         return qh / norm
 
@@ -310,7 +310,7 @@ def _(K2, invert_pv_2layer, np, plt, q1_hat, q2_hat):
     E_bc   = spectrum(psi_bc)
     k_bins = np.arange(kmax_int + 1)
 
-    fig2, axes2 = plt.subplots(2, 3, figsize=(15, 8))
+    fig2, axes2 = plt.subplots(2, 3, figsize=(11, 6))
 
     # Layer 1 PV
     im00 = axes2[0,0].imshow(q1_phys, cmap='RdBu_r', origin='lower')
