@@ -47,7 +47,7 @@ def _(mo):
 def _(mo):
     N_ctrl      = mo.ui.slider(64, 512, step=64, value=128,
                                label="Resolution N")
-    nu_ctrl     = mo.ui.number(start=1e-10, stop=1e-2, step=1e-9, value=1e-6,
+    nu_ctrl     = mo.ui.number(start=1e-9, stop=1e-2, step=1e-9, value=1e-6,
                                label="Viscosity ν")
     order_ctrl  = mo.ui.slider(1, 4, step=1, value=2,
                                label="Viscosity order p")

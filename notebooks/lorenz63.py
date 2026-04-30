@@ -179,7 +179,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    eps_ctrl   = mo.ui.number(start=1e-12, stop=1.0, step=1e-10, value=1e-8,
+    eps_ctrl   = mo.ui.number(start=1e-10, stop=1.0, step=1e-10, value=1e-8,
                                label="Perturbation amplitude ε")
     pseed_ctrl = mo.ui.number(start=0, stop=9999, step=1, value=137,
                                label="Perturbation seed")

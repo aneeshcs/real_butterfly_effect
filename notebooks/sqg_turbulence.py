@@ -46,7 +46,7 @@ def _(mo):
 @app.cell
 def _(mo):
     N_ctrl      = mo.ui.slider(64, 512, step=64, value=128, label="Resolution N")
-    nu_ctrl     = mo.ui.number(start=1e-10, stop=1e-3, step=1e-9, value=1e-7,
+    nu_ctrl     = mo.ui.number(start=1e-9, stop=1e-3, step=1e-9, value=1e-7,
                                label="Hyperviscosity ν")
     order_ctrl  = mo.ui.slider(1, 4, step=1, value=2, label="Order p")
     dt_ctrl     = mo.ui.number(start=1e-4, stop=0.05, step=1e-4, value=0.005,
