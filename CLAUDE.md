@@ -189,6 +189,12 @@ These rules are critical — violating them causes silent failures or broken WAS
 - **Default values must be browser-safe.** For the hosted WASM version, default
   resolution N should be ≤128 (2D) or ≤64 (3D). Users on Casper can increase N via
   the slider.
+- **`mo.ui.number` step constraint:** `value` must satisfy `(value − start) % step == 0`.
+  Off-grid values cause a browser validation error on load. Always verify
+  `(value − start) / step` is an integer when choosing `start`, `step`, and `value`.
+- **`mo.ui.dropdown` value must be a key, not a mapped value.** When `options` is a
+  dict `{"Label": value, ...}`, the `value` parameter must be one of the *keys*
+  (e.g. `value="Both layers"`), not one of the mapped values (e.g. `value="both"`).
 - UI control cells should only create controls and return them — no computation.
 
 ### Long-running Cells
