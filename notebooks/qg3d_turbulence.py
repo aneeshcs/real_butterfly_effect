@@ -200,7 +200,7 @@ def _(
 
 
 @app.cell
-def _(K2, N, dealias, fft2, ifft2, np, seed_ctrl):
+def _(K2, N, dealias, ifft2, np, seed_ctrl):
     # ── Initial conditions ───────────────────────────────────────────────────
     rng  = np.random.default_rng(seed_ctrl.value)
     k0   = 4
@@ -287,12 +287,10 @@ def _(
 
 
 @app.cell
-def _(K2, invert_pv_2layer, np, plt, q1_hat, q2_hat):
-    from numpy.fft import ifft2 as _ifft2
-
+def _(K2, ifft2, invert_pv_2layer, np, plt, q1_hat, q2_hat):
     psi1_f, psi2_f = invert_pv_2layer(q1_hat, q2_hat)
-    q1_phys = np.real(_ifft2(q1_hat))
-    q2_phys = np.real(_ifft2(q2_hat))
+    q1_phys = np.real(ifft2(q1_hat))
+    q2_phys = np.real(ifft2(q2_hat))
 
     # Barotropic / baroclinic decomposition
     psi_bt = 0.5 * (psi1_f + psi2_f)   # barotropic mode
@@ -323,13 +321,13 @@ def _(K2, invert_pv_2layer, np, plt, q1_hat, q2_hat):
     plt.colorbar(im10, ax=axes2[1,0])
 
     # Barotropic streamfunction
-    bt_phys = np.real(_ifft2(psi_bt))
+    bt_phys = np.real(ifft2(psi_bt))
     im01 = axes2[0,1].imshow(bt_phys, cmap='RdBu_r', origin='lower')
     axes2[0,1].set_title('Barotropic $\\psi_{bt}$')
     plt.colorbar(im01, ax=axes2[0,1])
 
     # Baroclinic streamfunction
-    bc_phys = np.real(_ifft2(psi_bc))
+    bc_phys = np.real(ifft2(psi_bc))
     im11 = axes2[1,1].imshow(bc_phys, cmap='RdBu_r', origin='lower')
     axes2[1,1].set_title('Baroclinic $\\psi_{bc}$')
     plt.colorbar(im11, ax=axes2[1,1])
