@@ -589,7 +589,7 @@ def _(kmax, mo):
                                 label="Perturbation seed")
     layer3_ctrl  = mo.ui.dropdown(
         options={"Both layers": "both", "Layer 1 only": "layer1", "Layer 2 only": "layer2"},
-        value="both",
+        value="Both layers",
         label="Perturb"
     )
     mo.hstack([k_inj3_ctrl, wamp3_ctrl, wseed3_ctrl, layer3_ctrl])
