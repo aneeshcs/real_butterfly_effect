@@ -1,0 +1,23 @@
+# ML artifacts (large, reproducible)
+ml/data/*.npz
+ml/checkpoints/
+ml/figures/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter / marimo cache
+.marimo/
+*.ipynb_checkpoints/
+
+# Environment
+.env
+*.env
+
+# macOS
+.DS_Store
