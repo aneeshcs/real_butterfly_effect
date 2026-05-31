@@ -21,3 +21,9 @@ build/
 
 # macOS
 .DS_Store
+
+# Logs
+*.log
+
+# Claude Code session data
+.claude/
