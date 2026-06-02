@@ -20,14 +20,14 @@ OUT_PATH = os.path.join(os.path.dirname(__file__), 'ns2d_trajectories.npz')
 N        = 64
 DT       = 0.005
 BURNIN   = 2000
-TRAJ_LEN = 500
+TRAJ_LEN = 2000   # longer windows for FTLE plateau (10 t.u. at dt=0.005)
 NU       = 1e-6
 ORDER    = 2
 MU       = 0.1
 K_F      = 4
 F0       = 1.0
-N_TRAIN  = 200
-N_VAL    = 30
+N_TRAIN  = 50     # 50×2000=100k train pairs, same epoch cost as 200×500
+N_VAL    = 10
 N_TEST   = 30
 SEED     = 42
 # ──────────────────────────────────────────────────────────────────────────────

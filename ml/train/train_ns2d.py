@@ -12,7 +12,15 @@ from torch.utils.data import Dataset, DataLoader
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from ml.models.cnn import QG2DCNN
 from ml.models.mlp import Normalizer
-from ml.train.train_l63 import gtf_loss, get_K
+from ml.train.train_l63 import gtf_loss
+
+
+def _get_K(epoch):
+    """K schedule: K=1 (ep 0-49), K=5 (ep 50-74), K=10 (ep 75+).
+    Starts K=10 at epoch 75 so it gets ~5 h of the 12 h walltime."""
+    if epoch < 50: return 1
+    if epoch < 75: return 5
+    return 10
 
 # ── defaults ──────────────────────────────────────────────────────────────────
 DATA_PATH  = os.path.join(os.path.dirname(__file__), '..', 'data',
@@ -107,7 +115,7 @@ def main():
     val_ds   = NS2DDataset(val_data,   K_steps=1, seed=args.seed + 1)
 
     for epoch in range(args.n_epochs):
-        K = get_K(epoch)
+        K = _get_K(epoch)
         if K != current_K:
             train_ds.update_K(K)
             val_ds.update_K(K)
